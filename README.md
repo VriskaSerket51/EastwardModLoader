@@ -21,8 +21,6 @@ Here is example code for skipping Logo scene.
 mock.connectGlobalSignalFunc("scene.open", onSceneOpen)
 
 function onSceneOpen(scene)
-    import("script.Common")
-
     local path = scene.path
 
     if (path == "scene/design/ui/Logo.scene") then
