@@ -15,3 +15,18 @@ Other game logs will be saved at '%appdata%/Pixpil/Eastward/{steam_id}/game.log'
 'modloader.lua' is just a template, you can edit it whatever you want!
 
 Key idea is using Eastward's signal handler, such as `mock.connectGlobalSignalFunc("game.init", onGameInit)`.
+
+Here is example code for skipping Logo scene.
+```lua
+mock.connectGlobalSignalFunc("scene.open", onSceneOpen)
+
+function onSceneOpen(scene)
+    import("script.Common")
+
+    local path = scene.path
+
+    if (path == "scene/design/ui/Logo.scene") then
+        game:openSceneByPath("scene/ui/TitleMenu.scene")
+    end
+end
+```
