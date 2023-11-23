@@ -1,0 +1,1 @@
+-- Historical game startup code removed; see the current loader implementation.
