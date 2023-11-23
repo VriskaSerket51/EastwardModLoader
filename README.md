@@ -2,7 +2,7 @@
 Mod loader of video game 'Eastward'
 
 ## How to use
-Inject 'main.lua' in to '{steam_dir}/Eastward/game/_system.g', using 'Injector.exe'.
+Inject 'main.lua' in to '{steam_dir}/Eastward/game/_system.g', using 'Injector.exe' or just make custom injector with [EastwardLib](https://github.com/VriskaSerket51/EastwardLib).
 
 Move 'modloader.lua' to '{steam_dir}/Eastward/game/modloader.lua'.
 
