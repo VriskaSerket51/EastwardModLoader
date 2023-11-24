@@ -4,10 +4,10 @@ Mod loader of video game 'Eastward'
 ## How to use
 Inject 'main.lua' in to '{steam_dir}/Eastward/game/_system.g', using 'Injector.exe' or just make custom injector with [EastwardLib](https://github.com/VriskaSerket51/EastwardLib).
 
-Move 'modloader.lua' to '{steam_dir}/Eastward/game/modloader.lua'.
+Generate your mods with 'template.lua' file, and move it to '{steam_dir}/Eastward/game/mods/'.
 
-ModLoader successfully injected!
-Logs for injecting will be saved at 'ModLoader.log', same directory with 'modloader.lua'.
+Then mod successfully injected!
+Logs for injecting will be saved at 'ModLoader.log'.
 
 Other game logs will be saved at '%appdata%/Pixpil/Eastward/{steam_id}/game.log' (Windows).
 
