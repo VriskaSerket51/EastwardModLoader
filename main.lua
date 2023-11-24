@@ -90,7 +90,7 @@ local function injectModLoader()
 	for i, f in ipairs(MOAIFileSystem.listFiles("mods")) do
 		if f:endswith(".lua") then
 			local fName = f:sub(1, #f - 4)
-			GameModule.addGameModuleMapping(fName, f, f)
+			GameModule.addGameModuleMapping(fName, "mods/" .. f, "mods/" .. f)
 			GameModule.loadGameModule(fName)
 			local errors = GameModule.getErrorInfo()
 			if errors then

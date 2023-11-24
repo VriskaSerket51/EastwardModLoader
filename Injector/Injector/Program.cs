@@ -19,6 +19,7 @@ if (!File.Exists(args[1]))
 }
 
 var g = GArchive.Read(args[0]);
-g["main.lua"] = new TextAsset(File.ReadAllText(args[1])).Encode();
+g["_system/main.lua"] = new TextAsset(File.ReadAllText(args[1])).Encode();
+File.Delete($"{args[0]}.bk");
 File.Move(args[0], $"{args[0]}.bk");
 g.Write(args[0]);
