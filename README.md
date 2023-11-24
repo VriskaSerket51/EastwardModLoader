@@ -12,7 +12,7 @@ Logs for injecting will be saved at 'ModLoader.log'.
 Other game logs will be saved at '%appdata%/Pixpil/Eastward/{steam_id}/game.log' (Windows).
 
 ## Add custom mod
-'modloader.lua' is just a template, you can edit it whatever you want!
+'template.lua' is just a template, you can edit it whatever you want!
 
 Key idea is using Eastward's signal handler, such as `mock.connectGlobalSignalFunc("game.init", onGameInit)`.
 
