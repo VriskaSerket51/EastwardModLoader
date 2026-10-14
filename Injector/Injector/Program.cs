@@ -1,25 +1,30 @@
-﻿using EastwardLib.Assets;
+using System.Text;
+using EastwardModLoader;
 
-if (args.Length < 2)
+try
 {
-    Console.WriteLine("usage: arg0 for _system.g path, arg1 for main.lua path");
-    return;
-}
+    if (args.Length == 0 || args[0] == "inject" && args.Length != 4
+        || args[0] == "restore" && args.Length != 3
+        || args[0] != "inject" && args[0] != "restore")
+    {
+        Console.Error.WriteLine("usage: Injector inject <_system.g> <main.lua loader> <output/_system.g>");
+        Console.Error.WriteLine("       Injector restore <_system.g> <output/_system.g>");
+        return 2;
+    }
 
-if (!File.Exists(args[0]))
+    if (args[0] == "inject")
+    {
+        ArchiveInjector.Inject(args[1], args[2], args[3]);
+    }
+    else
+    {
+        ArchiveInjector.Restore(args[1], args[2]);
+    }
+    Console.WriteLine("Archive written: " + Path.GetFullPath(args[^1]));
+    return 0;
+}
+catch (Exception error) when (error is IOException or InvalidDataException or ArgumentException or DecoderFallbackException)
 {
-    Console.WriteLine("arg0 file not exist");
-    return;
+    Console.Error.WriteLine(error.Message);
+    return 1;
 }
-
-if (!File.Exists(args[1]))
-{
-    Console.WriteLine("arg1 file not exist");
-    return;
-}
-
-var g = GArchive.Read(args[0]);
-g[$"{Path.GetFileNameWithoutExtension(args[0])}/main.lua"] = new TextAsset(File.ReadAllText(args[1])).Encode();
-File.Delete($"{args[0]}.bk");
-File.Move(args[0], $"{args[0]}.bk");
-g.Write(args[0]);
