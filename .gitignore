@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+.vscode/
+TestResults/
+*.user
+*.log
+.DS_Store
+build/
+**/CMakeFiles/
+**/CMakeCache.txt
