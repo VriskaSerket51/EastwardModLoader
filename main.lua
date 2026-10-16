@@ -40,9 +40,10 @@ mock.connectGlobalSignalFunc('game.init', function()
     pending = {}
 end)
 
-local function loadMod(file)
-    local id = file:sub(1, -5)
+local function loadMod(file, configuredId)
+    local id = configuredId or file:sub(1, -5)
     local path = 'mods/' .. file
+    local directory = configuredId and path:match('^(.*)/[^/]+$') or 'mods/' .. id
     local moduleName = 'EastwardMods.' .. id
     local context = { id = id, enabled = true, path = path }
     function context.log(message) log(id, message) end
@@ -56,7 +57,7 @@ local function loadMod(file)
             and not moduleName:find('..', 1, true), 'Invalid module name')
         assert(type(relativePath) == 'string' and relativePath:match('^[%w_./-]+%.lua$')
             and not relativePath:match('^/') and not relativePath:find('..', 1, true), 'Invalid mod-relative Lua path')
-        local path = 'mods/' .. id .. '/' .. relativePath
+        local path = directory .. '/' .. relativePath
         assert(MOAIFileSystem.checkFileExists(path), 'Script patch does not exist: ' .. path)
         local existing = rawget(_G, 'MOCK_SCRIPT_LIBRARY_PATCH') or {}
         assert(not existing[moduleName] and not loader.scriptPatches[moduleName], 'Script patch conflict: ' .. moduleName)
@@ -94,15 +95,40 @@ local function loadMod(file)
     log(id, 'Loaded')
 end
 
-local files = MOAIFileSystem.listFiles('mods') or {}
-table.sort(files)
-for _, file in ipairs(files) do
-    -- Filenames form isolated GameModule names; reject separators and ambiguous dots.
-    if file:match('^[%w_-]+%.lua$') then
-        local ok, error = pcall(loadMod, file)
-        if not ok then log(file, error) end
+local function loadLegacy()
+    local files = MOAIFileSystem.listFiles('mods') or {}
+    table.sort(files)
+    for _, file in ipairs(files) do
+        if file:match('^[%w_-]+%.lua$') then
+            local ok, reason = pcall(loadMod, file)
+            if not ok then log(file, reason) end
+        end
     end
 end
 
-loader.loading = false
+if MOAIFileSystem.checkFileExists and MOAIFileSystem.checkFileExists('mods/loader.json') then
+    local stream = MOAIFileStream.new()
+    assert(stream:open('_system/__eastward_modloader/ewmod.lua', MOAIFileStream.READ) ~= false, 'Resource package module is missing')
+    local source = stream:read()
+    stream:close()
+    local packages = assert(loadstring(assert(source), '@EastwardModLoader.ewmod'))()
+    local configuration = packages.readConfiguration()
+    local originalPreInit = MOCK_PRE_GAME_INIT
+    MOCK_PRE_GAME_INIT = function(...)
+        if originalPreInit then originalPreInit(...) end
+        -- The game's original callback mounts DLC; our complete G overlays go after it.
+        packages.activate(configuration)
+        for _, mod in ipairs(configuration.mods) do
+            if mod.enabled and mod.kind == 'lua' then
+                local ok, reason = pcall(loadMod, mod.file, mod.id)
+                if not ok then log(mod.id, reason) end
+            end
+        end
+        if configuration.legacyLuaDiscovery == true then loadLegacy() end
+        loader.loading = false
+    end
+else
+    loadLegacy()
+    loader.loading = false
+end
 return loader
