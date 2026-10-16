@@ -15,7 +15,7 @@ mock = {
         table.insert(signals[signal], callback)
     end
 }
-MOAIFileSystem = { checkFileExists = function() return true end, listFiles = function() return {
+MOAIFileSystem = { checkFileExists = function(path) return path ~= 'mods/loader.json' end, listFiles = function() return {
     'z-good.lua', 'a-bad.lua', 'b-init-failure.lua', 'x-callback-failure.lua',
     'disabled.lua.disabled', '../unsafe.lua', 'two.dots.lua'
 } end }
@@ -111,3 +111,42 @@ if len(sys.argv) > 1:
     engine.execute(source)
     engine.globals().verifyModules()
     print('Public GameModule compatibility passed: separate environments and failure flushing.')
+
+# Managed configuration keeps original/DLC pre-init first and uses disabled/order state.
+managed = LuaRuntime(unpack_returned_tuples=True)
+managed.globals().resource_module_source = (Path(__file__).resolve().parents[1] / 'ewmod.lua').read_text(encoding='utf-8')
+managed.execute(r"""
+local config = {format='eastward-loader',version=1,mods={
+    {id='second',kind='lua',file='packages/second/main.lua',enabled=true},
+    {id='disabled',kind='lua',file='packages/disabled.lua',enabled=false},
+    {id='first',kind='lua',file='packages/first.lua',enabled=true}
+},deployment={packages={},archives={},resources={}}}
+local seen, loaded = {}, {}
+MOCK_PRE_GAME_INIT = function() seen[#seen+1]='original-dlc' end
+MOAIFileSystem = {checkFileExists=function(path)return path=='mods/loader.json' end,
+    listFiles=function()error('Managed config should not discover legacy Lua')end}
+MOAIFileStream = {READ=1,new=function()return{
+    open=function(self,path)self.path=path;return true end,
+    read=function(self)if self.path=='mods/loader.json' then return '{}' end;return resource_module_source end,
+    close=function()end}end}
+MOAIJsonParser={decode=function()return config end}
+mock={connectGlobalSignalFunc=function()end}
+GameModule={addGameModuleMapping=function(name,path)loaded[name]=path end,
+    loadGameModule=function(name,flush)
+        assert(flush);seen[#seen+1]=name
+        return {initMod=function(context)
+            assert(context.id=='second' or context.id=='first')
+            context.log('managed')
+        end},{}
+    end}
+function verifyManaged()
+    assert(#seen==0)
+    MOCK_PRE_GAME_INIT()
+    assert(#seen==3 and seen[1]=='original-dlc' and seen[2]=='EastwardMods.second' and seen[3]=='EastwardMods.first')
+    assert(loaded['EastwardMods.second']=='mods/packages/second/main.lua')
+    assert(not loaded['EastwardMods.disabled'] and not EastwardModLoader.loading)
+end
+""")
+managed.execute(source)
+managed.globals().verifyManaged()
+print('Managed Lua tests passed: original/DLC pre-init, enabled order, nested main.lua and legacy discovery policy.')

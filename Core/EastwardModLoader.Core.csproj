@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EastwardLibProject Condition="'$(EastwardLibProject)' == ''">$(MSBuildProjectDirectory)/../Injector/EastwardLib/EastwardLib.csproj</EastwardLibProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(EastwardLibProject)" />
+    <Compile Include="../Injector/Injector/ArchiveInjector.cs" Link="ArchiveInjector.cs" />
+    <EmbeddedResource Include="../main.lua" LogicalName="EastwardModLoader.main.lua" />
+    <EmbeddedResource Include="../ewmod.lua" LogicalName="EastwardModLoader.ewmod.lua" />
+  </ItemGroup>
+</Project>

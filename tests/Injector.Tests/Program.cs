@@ -41,7 +41,7 @@ void Verify(string source, string loader)
     var original = GArchive.Read(source);
     ArchiveInjector.Inject(source, loader, output);
     var injected = GArchive.Read(output);
-    Require(injected.Count == original.Count + 2, "Unexpected added entries");
+    Require(injected.Count == original.Count + 3 + (File.Exists(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(loader))!, "ewmod.lua")) ? 1 : 0), "Unexpected added entries");
     foreach (var (name, bytes) in original)
     {
         if (name != "_system/main.lua")
@@ -55,7 +55,15 @@ void Verify(string source, string loader)
     Throws(() => ArchiveInjector.Inject(source, loader, source));
     Throws(() => ArchiveInjector.Inject(source, loader, output));
     Throws(() => ArchiveInjector.Inject(output, loader, Path.Combine(directory, "duplicate", "_system.g")));
-    ArchiveInjector.Restore(output, restored);
+    var updated = Path.Combine(directory, "updated", "_system.g");
+    ArchiveInjector.UpdateLoader(output, loader, updated);
+    Require(GArchive.Read(updated)["_system/__eastward_modloader/original_main.lua"].SequenceEqual(original["_system/main.lua"]), "Update changed original backup");
+    var tampered = Path.Combine(directory, "tampered", "_system.g");
+    injected["_system/__eastward_modloader/loader.lua"] = Encoding.UTF8.GetBytes("tampered");
+    injected.Write(tampered);
+    Throws(() => ArchiveInjector.Restore(tampered, Path.Combine(directory, "refused", "_system.g")));
+    Throws(() => ArchiveInjector.UpdateLoader(tampered, loader, Path.Combine(directory, "refused-update", "_system.g")));
+    ArchiveInjector.Restore(updated, restored);
     var roundtrip = GArchive.Read(restored);
     Require(roundtrip.Count == original.Count, "Restore did not remove loader entries");
     foreach (var (name, bytes) in original)
