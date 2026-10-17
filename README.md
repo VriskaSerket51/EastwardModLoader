@@ -1,30 +1,51 @@
 # EastwardModLoader
-Mod loader of video game 'Eastward'
+
+English | [한국어](README.ko.md)
+
+A mod loader for the game 'Eastward'.
 
 ## How to use
-Inject 'main.lua' in to '{steam_dir}/Eastward/game/_system.g', using 'Injector.exe' or just make custom injector with [EastwardLib](https://github.com/VriskaSerket51/EastwardLib).
 
-Generate your mods with 'template.lua' file, and move it to '{steam_dir}/Eastward/game/mods/'.
+Open the game directory in EastwardModTool and select **Mod > Manage mods...**.
 
-Then mod successfully injected!
-Logs for injecting will be saved at 'ModLoader.log'.
+Use **Install / update loader**, then add an `.ewmod`, a Lua file or a directory containing `main.lua`. Select the mods to use and press **Apply enabled mods**.
 
-Other game logs will be saved at '%appdata%/Pixpil/Eastward/{steam_id}/game.log' (Windows).
+Installing or updating the loader modifies `_system.g` and backs up the original. **Uninstall loader** restores the original.
 
-## Add custom mod
-'template.lua' is just a template, you can edit it whatever you want!
+The loader mounts `.ewmod` packages as ZIPs and reads their resources directly. Activating mods does not rebuild resource `.g` archives. See the [engine notes](docs/engine.md) for details.
 
-Key idea is using Eastward's signal handler, such as `mock.connectGlobalSignalFunc("game.init", onGameInit)`.
+## Creating mods
 
-Here is example code for skipping Logo scene.
+Start with `template.lua`. Connect to game signals in `initMod(mod)`:
+
 ```lua
-mock.connectGlobalSignalFunc("scene.open", onSceneOpen)
-
-function onSceneOpen(scene)
-    local path = scene.path
-
-    if (path == "scene/design/ui/Logo.scene") then
-        game:openSceneByPath("scene/ui/TitleMenu.scene")
-    end
+function initMod(mod)
+    mod.on('game.init', function(config)
+        mod.log('Hello, Eastward!')
+    end)
 end
 ```
+
+To replace a Lua module, put `Common.lua` in the mod directory:
+
+```lua
+function initMod(mod)
+    mod.patchScript('script.Common', 'Common.lua')
+end
+```
+
+Replacements are applied before game startup. Lua mods replacing the same module cannot be enabled together.
+
+See the [language patch guide](docs/language-patches.md) to change translations, menus, images and fonts together.
+
+## How to build
+
+Requires .NET 10.
+
+```sh
+git clone --recurse-submodules https://github.com/VriskaSerket51/EastwardModLoader.git
+cd EastwardModLoader
+dotnet build EastwardModLoader.sln -c Release
+```
+
+Installation and mod management code is in `EastwardModLoader.Core`. Other applications can use `LoaderModManager`.
