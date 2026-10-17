@@ -22,7 +22,12 @@ Run("install-restore", fixture =>
     var injected = GArchive.Read(Path.Combine(fixture.Game, "_system.g"));
     Require(injected.Keys.Any(key => key.Contains("__eastward_modloader", StringComparison.Ordinal)), "Loader must be inserted into fixture bootstrap");
     Require(injected["_system/unrelated"].AsSpan().SequenceEqual(new byte[] { 0, 255, 42 }), "Injection must preserve unrelated bootstrap resources");
+    Require(injected.ContainsKey("_system/__eastward_modloader/overlay.lua"), "The direct resource reader must be bundled");
+    configuration["bootstrap"]!["version"] = "3";
+    File.WriteAllText(fixture.ConfigurationPath, configuration.ToJsonString());
+    Reject(() => manager.SetEnabled([]));
     manager.Install();
+    Require(manager.Inspect().Version == LoaderModManager.LoaderVersion, "Install must update an old loader before enabling direct packages");
     Require(manager.Inspect().Conflicts.Count == 0, "Managed reinstall must remain valid");
     manager.Uninstall();
     Require(!manager.Inspect().Installed, "Uninstall must clear installed state");
@@ -43,17 +48,20 @@ Run("resources", fixture =>
     manager.SetEnabled([mods[0].Id, mods[1].Id]);
     var configuration = fixture.Configuration();
     Require(configuration["deployment"]!["resources"]!.AsArray().Count == 1, "Identical overlapping resources must be deduplicated");
-    var archive = configuration["deployment"]!["archives"]!.AsArray().Single()!;
-    var cachePath = Path.Combine(fixture.Game, "mods", archive["file"]!.GetValue<string>());
-    Require(Encoding.UTF8.GetString(GArchive.Read(cachePath)["asset/dialog"]) == "first replacement", "Enabled package must compile a complete resource layer");
-    Require(GArchive.Read(cachePath)["asset/unrelated"].AsSpan().SequenceEqual(new byte[] { 8, 9, 10 }), "Compiled resource layer must preserve unrelated resources");
+    Require(configuration["deployment"]!["mode"]!.GetValue<string>() == "ewmod", "Resources must be deployed directly from packages");
+    Require(configuration["deployment"]!["packages"]!.AsArray().Count == 2, "Both identical source packages must remain verified");
+    Require(configuration["deployment"]!["archives"] == null && !Directory.Exists(Path.Combine(fixture.Game, "mods", "cache")), "Enabling mods must not compile or cache G archives");
+    using (var package = ZipFile.OpenRead(Path.Combine(fixture.Game, "mods", mods[0].File)))
+    using (var entry = package.GetEntry("resources/asset/dialog")!.Open())
+    using (var reader = new StreamReader(entry))
+        Require(reader.ReadToEnd() == "first replacement", "Direct resource payload must remain in the original ewmod");
     var savedConfig = File.ReadAllBytes(fixture.ConfigurationPath);
     Reject(() => manager.SetEnabled([mods[0].Id, mods[2].Id]));
     Require(File.ReadAllBytes(fixture.ConfigurationPath).AsSpan().SequenceEqual(savedConfig), "Conflicting enable must not commit a partial configuration");
     Reject(() => manager.SetEnabled([mods[0].Id, mods[0].Id]));
     Reject(() => manager.SetEnabled(["missing"]));
     manager.SetEnabled([]);
-    Require(fixture.Configuration()["deployment"]!["archives"]!.AsArray().Count == 0, "Disabling all packages must remove active resource layers");
+    Require(fixture.Configuration()["deployment"]!["packages"]!.AsArray().Count == 0 && fixture.Configuration()["deployment"]!["resources"]!.AsArray().Count == 0, "Disabling all packages must clear the direct resource plan");
     var imported = Path.Combine(fixture.Game, "mods", mods[0].File);
     manager.Remove(mods[0].Id);
     Require(File.Exists(imported), "Removing an entry must preserve imported user source files");

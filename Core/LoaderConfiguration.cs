@@ -29,12 +29,11 @@ internal sealed class ManagedMod
 }
 
 internal sealed record LoaderBootstrap(string OriginalArchiveHash, string InstalledArchiveHash, string Backup, string Version);
-internal sealed record CachedArchive(string Name, string File, string Sha256);
 internal sealed record PackageHash(string Id, string Sha256);
 internal sealed record ResourceHash(string Path, string? OriginalHash, string Hash, int Size);
 internal sealed class LoaderDeployment
 {
-    public List<CachedArchive> Archives { get; set; } = [];
+    public string Mode { get; set; } = "ewmod";
     public List<PackageHash> Packages { get; set; } = [];
     public List<ResourceHash> Resources { get; set; } = [];
 }
