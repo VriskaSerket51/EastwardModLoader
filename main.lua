@@ -3,7 +3,7 @@
 --------------------------------------------------------------------
 if rawget(_G, 'EastwardModLoader') then return EastwardModLoader end
 
-local loader = { version = 2, mods = {}, scriptPatches = {}, loading = true }
+local loader = { version = 4, mods = {}, scriptPatches = {}, loading = true }
 _G.EastwardModLoader = loader
 
 local function log(id, message)
@@ -116,7 +116,7 @@ if MOAIFileSystem.checkFileExists and MOAIFileSystem.checkFileExists('mods/loade
     local originalPreInit = MOCK_PRE_GAME_INIT
     MOCK_PRE_GAME_INIT = function(...)
         if originalPreInit then originalPreInit(...) end
-        -- The game's original callback mounts DLC; our complete G overlays go after it.
+        -- Validate against the original/DLC mounts before routing modified resource reads.
         packages.activate(configuration)
         for _, mod in ipairs(configuration.mods) do
             if mod.enabled and mod.kind == 'lua' then

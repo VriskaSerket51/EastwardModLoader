@@ -41,7 +41,7 @@ void Verify(string source, string loader)
     var original = GArchive.Read(source);
     ArchiveInjector.Inject(source, loader, output);
     var injected = GArchive.Read(output);
-    Require(injected.Count == original.Count + 3 + (File.Exists(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(loader))!, "ewmod.lua")) ? 1 : 0), "Unexpected added entries");
+    Require(injected.Count == original.Count + 3 + new[] { "ewmod.lua", "overlay.lua" }.Count(name => File.Exists(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(loader))!, name))), "Unexpected added entries");
     foreach (var (name, bytes) in original)
     {
         if (name != "_system/main.lua")

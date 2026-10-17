@@ -1,5 +1,5 @@
 --------------------------------------------------------------------
--- Native VFS resource packages. The desktop manager prepares full G archives.
+-- Mount resource packages privately and route changed file reads to their ZIP entries.
 --------------------------------------------------------------------
 local module = {}
 local function fail(message) error('[EastwardModLoader] ' .. message, 0) end
@@ -76,6 +76,7 @@ local function collect(directory, result, prefix)
     end
 end
 function module.activate(config)
+    if module.active then fail('Resource packages are already active') end
     local enabled = {}
     for _, mod in ipairs(config.mods) do if mod.enabled and mod.kind == 'ewmod' then enabled[#enabled + 1] = mod end end
     local plan = config.deployment
@@ -83,8 +84,9 @@ function module.activate(config)
         if plan and #((plan.packages) or {}) ~= 0 then fail('Deployment does not match enabled packages') end
         return
     end
-    if type(plan) ~= 'table' or type(plan.packages) ~= 'table' or type(plan.archives) ~= 'table' or type(plan.resources) ~= 'table' then fail('Prepared deployment is missing') end
-    local packages, expected, actual, archives = {}, {}, {}, {}
+    if type(plan) ~= 'table' or type(plan.packages) ~= 'table' or type(plan.resources) ~= 'table' then fail('Prepared deployment is missing') end
+    if plan.mode ~= nil and plan.mode ~= 'ewmod' then fail('Unsupported deployment mode') end
+    local packages, expected, actual, mappings = {}, {}, {}, {}
     for _, item in ipairs(plan.packages) do
         if packages[item.id] then fail('Duplicate prepared package') end
         packages[item.id] = hash(item.sha256)
@@ -116,7 +118,7 @@ function module.activate(config)
             local resources = 0
             for resourcePath, metadata in pairs(manifest.resources) do
                 path(resourcePath)
-                if not resourcePath:find('/', 1, true) or resourcePath:match('^_system/') or resourcePath:match('^mods/') or resourcePath:match('^lib/') or resourcePath == 'config/game_config' then fail('Reserved resource path: ' .. resourcePath) end
+                if not resourcePath:find('/', 1, true) or resourcePath:match('^_system/') or resourcePath:match('^mods/') or resourcePath:match('^lib/') or resourcePath:match('^__eastward_modloader_packages/') or (resourcePath == 'config/game_config' or resourcePath == 'config/game_config.json') then fail('Reserved resource path: ' .. resourcePath) end
                 if type(metadata) ~= 'table' or type(metadata.size) ~= 'number' or metadata.size < 0 or metadata.size % 1 ~= 0 then fail('Invalid resource size') end
                 metadata.originalHash = nullable(metadata.originalHash)
                 local wanted = expected[resourcePath]
@@ -133,28 +135,24 @@ function module.activate(config)
                         if not exists or digest(resourcePath) ~= wanted.originalHash then fail('Original resource differs: ' .. resourcePath) end
                     elseif exists then fail('New resource already exists: ' .. resourcePath) end
                 end
+                mappings[resourcePath] = mappings[resourcePath] or (root .. '/' .. member)
                 actual[resourcePath] = true
-                archives[resourcePath:match('^([^/]+)/')] = true
                 resources = resources + 1
             end
             if resources == 0 or next(files) then fail('ZIP entries do not match manifest: ' .. mod.id) end
         end
         for resource in pairs(expected) do if not actual[resource] then fail('Prepared resource has no enabled package: ' .. resource) end end
-        local seen = {}
-        for _, archive in ipairs(plan.archives) do
-            if type(archive.name) ~= 'string' or not archive.name:match('^[%w_-]+$') or seen[archive.name] or not archives[archive.name] then fail('Invalid prepared archive') end
-            seen[archive.name] = true
-            archive.file = path(archive.file)
-            if not archive.file:match('^cache/') then fail('Prepared archive is outside cache') end
-            if digest('mods/' .. archive.file) ~= hash(archive.sha256) then fail('Prepared archive changed: ' .. archive.name) end
-        end
-        for name in pairs(archives) do if not seen[name] then fail('Missing prepared archive: ' .. name) end end
+        local source = read('_system/__eastward_modloader/overlay.lua')
+        if not source then fail('Direct resource reader missing; update the loader') end
+        local chunk, error = loadstring(source, '@EastwardModLoader.overlay')
+        if not chunk then fail(error) end
+        module.overlay = chunk().install(mappings)
     end)
-    for _, root in ipairs(mounted) do MOAIFileSystem.mountVirtualDirectory(root) end
-    if not ok then error(reason, 0) end
-    -- All source, manifest, original and cache checks finish before changing game mounts.
-    for _, archive in ipairs(plan.archives) do
-        if not MOAIFileSystem.mountVirtualDirectory(archive.name, 'mods/' .. archive.file) then fail('Prepared G mount failed: ' .. archive.name) end
+    if not ok then
+        for _, root in ipairs(mounted) do MOAIFileSystem.mountVirtualDirectory(root) end
+        error(reason, 0)
     end
+    module.active = true
+    module.mounts = mounted
 end
 return module

@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using EastwardLib.Assets;
-using EastwardLib.Compilation;
 using EastwardLib.Modding;
 using EastwardLib.Utils;
 
@@ -12,7 +11,7 @@ namespace EastwardModLoader;
 
 public sealed class LoaderModManager
 {
-    public const string LoaderVersion = "3";
+    public const string LoaderVersion = "4";
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     public string GameDirectory { get; }
     private string ModsDirectory => Path.Combine(GameDirectory, "mods");
@@ -151,6 +150,7 @@ public sealed class LoaderModManager
         using var gate = Lock();
         var configuration = ReadConfiguration();
         ValidateBootstrap(configuration);
+        RequireCurrentLoader(configuration);
         var ids = enabledIds.ToHashSet(StringComparer.Ordinal);
         if (ids.Count != enabledIds.Count || ids.Any(id => configuration.Mods.All(mod => mod.Id != id))) throw new ArgumentException("Unknown or duplicate mod ID");
         foreach (var mod in configuration.Mods) mod.Enabled = ids.Contains(mod.Id);
@@ -163,6 +163,7 @@ public sealed class LoaderModManager
         using var gate = Lock();
         var configuration = ReadConfiguration();
         ValidateBootstrap(configuration);
+        RequireCurrentLoader(configuration);
         var mod = configuration.Mods.SingleOrDefault(mod => mod.Id == id) ?? throw new ArgumentException("Unknown mod ID");
         configuration.Mods.Remove(mod);
         configuration.Deployment = Prepare(configuration);
@@ -173,41 +174,17 @@ public sealed class LoaderModManager
     private LoaderDeployment Prepare(LoaderConfiguration configuration)
     {
         var resources = ReadPackages(configuration, validateAll: false);
-        var deployment = new LoaderDeployment { Resources = resources.Values.Select(resource => resource.Hash).ToList(), Packages = configuration.Mods.Where(mod => mod.Enabled && mod.Kind == "ewmod").Select(mod => new PackageHash(mod.Id, mod.Sha256)).ToList() };
-        if (resources.Count == 0) return deployment;
-        using var baseline = Baseline();
-        var generation = Guid.NewGuid().ToString("N");
-        var directory = Resolve("cache/" + generation);
-        var compiler = new AssetCompiler(baseline.Manager);
-        var temporary = Path.Combine(Path.GetTempPath(), "eastward-loader-" + generation);
-        try
+        return new LoaderDeployment
         {
-            compiler.SaveTo(temporary, resources.ToDictionary(pair => pair.Key, pair => pair.Value.Bytes, StringComparer.Ordinal));
-            Directory.CreateDirectory(directory);
-            foreach (var file in Directory.EnumerateFiles(temporary, "*.g"))
-                File.Copy(file, Path.Combine(directory, Path.GetFileName(file)));
-        }
-        catch
-        {
-            if (Directory.Exists(directory)) Directory.Delete(directory, true);
-            throw;
-        }
-        finally
-        {
-            if (Directory.Exists(temporary)) Directory.Delete(temporary, true);
-        }
-        foreach (var file in Directory.EnumerateFiles(directory, "*.g"))
-        {
-            deployment.Archives.Add(new CachedArchive(Path.GetFileNameWithoutExtension(file), "cache/" + generation + "/" + Path.GetFileName(file), HashFile(file)));
-        }
-        return deployment;
+            Resources = resources.Values.Select(resource => resource.Hash).ToList(),
+            Packages = configuration.Mods.Where(mod => mod.Enabled && mod.Kind == "ewmod").Select(mod => new PackageHash(mod.Id, mod.Sha256)).ToList()
+        };
     }
-
-    private sealed record CompiledResource(ResourceHash Hash, byte[] Bytes, string ModId);
-    private Dictionary<string, CompiledResource> ReadPackages(LoaderConfiguration configuration, bool validateAll)
+    private sealed record ModResource(ResourceHash Hash, byte[] Bytes, string ModId);
+    private Dictionary<string, ModResource> ReadPackages(LoaderConfiguration configuration, bool validateAll)
     {
         using var baseline = Baseline();
-        var result = new Dictionary<string, CompiledResource>(StringComparer.Ordinal);
+        var result = new Dictionary<string, ModResource>(StringComparer.Ordinal);
         foreach (var mod in configuration.Mods.Where(mod => mod.Enabled || validateAll))
         {
             var path = Resolve(mod.File);
@@ -237,7 +214,7 @@ public sealed class LoaderModManager
                 var hash = new ResourceHash(resource, entry["originalHash"]?.GetValue<string>(), entry["hash"]!.GetValue<string>(), entry["size"]!.GetValue<int>());
                 var bytes = package.GetResource(resource);
                 if (result.TryGetValue(resource, out var existing) && !existing.Bytes.AsSpan().SequenceEqual(bytes)) throw new InvalidDataException("Mod conflict: " + existing.ModId + " and " + mod.Id + " replace " + resource);
-                result[resource] = new CompiledResource(hash, bytes, mod.Id);
+                result[resource] = new ModResource(hash, bytes, mod.Id);
             }
         }
         return result;
@@ -271,6 +248,11 @@ public sealed class LoaderModManager
         return configuration;
     }
 
+    private static void RequireCurrentLoader(LoaderConfiguration configuration)
+    {
+        if (configuration.Bootstrap != null && configuration.Bootstrap.Version != LoaderVersion)
+            throw new InvalidOperationException("Update the installed loader before changing enabled mods");
+    }
     private void ValidateBootstrap(LoaderConfiguration configuration)
     {
         RejectLinks(SystemArchive, GameDirectory);
@@ -325,12 +307,12 @@ public sealed class LoaderModManager
         return path;
     }
     private static void DeleteStage(string stage) { if (Directory.Exists(stage)) Directory.Delete(stage, true); }
-    private static bool Reserved(string path) => path.StartsWith("_system/", StringComparison.Ordinal) || path.StartsWith("mods/", StringComparison.Ordinal) || path.StartsWith("lib/", StringComparison.Ordinal) || path is "config/game_config" or "config/game_config.json";
+    private static bool Reserved(string path) => path.StartsWith("_system/", StringComparison.Ordinal) || path.StartsWith("mods/", StringComparison.Ordinal) || path.StartsWith("lib/", StringComparison.Ordinal) || path.StartsWith("__eastward_modloader_packages/", StringComparison.Ordinal) || path is "config/game_config" or "config/game_config.json";
     private static string HashFile(string file) { using var stream = File.OpenRead(file); return Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant(); }
     private static Dictionary<string, byte[]> LoaderBundle()
     {
         var result = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-        foreach (var name in new[] { "main.lua", "ewmod.lua" })
+        foreach (var name in new[] { "main.lua", "ewmod.lua", "overlay.lua" })
         {
             using var stream = typeof(LoaderModManager).Assembly.GetManifestResourceStream("EastwardModLoader." + name) ?? throw new InvalidOperationException("Missing bundled loader: " + name);
             using var buffer = new MemoryStream(); stream.CopyTo(buffer); result[name == "main.lua" ? "loader.lua" : name] = buffer.ToArray();

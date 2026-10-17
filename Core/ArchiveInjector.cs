@@ -57,10 +57,10 @@ public static class ArchiveInjector
     private static IReadOnlyDictionary<string, byte[]> ReadModules(string loaderPath)
     {
         var modules = new Dictionary<string, byte[]>(StringComparer.Ordinal) { ["loader.lua"] = File.ReadAllBytes(loaderPath) };
-        var packageModule = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(loaderPath))!, "ewmod.lua");
-        if (File.Exists(packageModule))
+        foreach (var name in new[] { "ewmod.lua", "overlay.lua" })
         {
-            modules.Add("ewmod.lua", File.ReadAllBytes(packageModule));
+            var module = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(loaderPath))!, name);
+            if (File.Exists(module)) modules.Add(name, File.ReadAllBytes(module));
         }
         return modules;
     }
