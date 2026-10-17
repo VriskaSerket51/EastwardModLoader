@@ -11,4 +11,5 @@
     <EmbeddedResource Include="../ewmod.lua" LogicalName="EastwardModLoader.ewmod.lua" />
     <EmbeddedResource Include="../overlay.lua" LogicalName="EastwardModLoader.overlay.lua" />
   </ItemGroup>
+  <Import Project="../Licenses.targets" />
 </Project>
