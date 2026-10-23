@@ -2,7 +2,7 @@
 
 English | [한국어](README.ko.md)
 
-A mod loader for the game 'Eastward'.
+An unofficial Eastward mod loader for Lua scripts and resource replacement packages.
 
 ## How to use
 
@@ -10,7 +10,7 @@ Open the game directory in EastwardModTool and select **Mod > Manage mods...**.
 
 Use **Install / update loader**, then add an `.ewmod`, a Lua file or a directory containing `main.lua`. Select the mods to use and press **Apply enabled mods**.
 
-Installing or updating the loader modifies `_system.g` and backs up the original. **Uninstall loader** restores the original.
+The loader adds a call before the existing `mock.init` call in the startup Lua code inside `_system.g`. The archive is backed up before installation. **Uninstall loader** restores the backup.
 
 The loader mounts `.ewmod` packages as ZIPs and reads their resources directly. Activating mods does not rebuild resource `.g` archives. See the [engine notes](docs/engine.md) for details.
 

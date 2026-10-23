@@ -6,7 +6,7 @@ English | [한국어](engine.ko.md)
 
 The loader is connected before the original `mock.init` call in `_system/main.lua` inside `_system.g`. The original startup code is kept separately.
 
-The original `MOCK_PRE_GAME_INIT` callback mounts DLC before `.ewmod` packages are activated. Asset and texture indexes and game scripts are read afterwards. Game signals that are not registered yet are connected at `game.init`.
+The loader runs the game's existing `MOCK_PRE_GAME_INIT` callback before activating `.ewmod` packages. The game code performs any DLC mounting or other work in that callback. Asset and texture indexes and game scripts are read afterwards. Game signals that are not registered yet are connected at `game.init`.
 
 See the public [Game.lua](https://github.com/pixpil/mock/blob/master/mock/core/Game.lua) and [GameModule.lua](https://github.com/pixpil/mock/blob/master/GameModule.lua) sources.
 

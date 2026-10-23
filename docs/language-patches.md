@@ -46,3 +46,7 @@ For a new font, select an existing `font_ttf` and choose a TTF/OTF file. Also se
 Edit bitmap font sources and glyph pages together. Existing font sources can be replaced, but new bitmap fonts are not registered automatically.
 
 Text cannot appear without the required glyphs. Languages such as Arabic also need in-game checks for text shaping and direction.
+
+## Files included in a patch
+
+The tool code license does not grant rights to use or redistribute game resources or fonts. Before distributing a patch, check the permissions and distribution terms for the images, fonts, scripts and translations it includes.

@@ -6,7 +6,7 @@
 
 `_system.g`의 `_system/main.lua`에서 원래 `mock.init` 앞에 로더를 연결합니다. 원본 시작 코드는 따로 보관합니다.
 
-`MOCK_PRE_GAME_INIT`의 원래 콜백이 DLC를 마운트한 뒤 `.ewmod`를 활성화합니다. 이후 에셋, 텍스처 인덱스와 게임 스크립트를 읽습니다. 아직 등록되지 않은 게임 시그널은 `game.init`에서 연결합니다.
+게임의 기존 `MOCK_PRE_GAME_INIT` 콜백을 먼저 실행한 뒤 `.ewmod`를 활성화합니다. DLC 마운트 등 기존 콜백의 처리는 게임 코드가 수행합니다. 이후 에셋, 텍스처 인덱스와 게임 스크립트를 읽습니다. 아직 등록되지 않은 게임 시그널은 `game.init`에서 연결합니다.
 
 공개 소스는 [Game.lua](https://github.com/pixpil/mock/blob/master/mock/core/Game.lua), [GameModule.lua](https://github.com/pixpil/mock/blob/master/GameModule.lua)를 참고하세요.
 
