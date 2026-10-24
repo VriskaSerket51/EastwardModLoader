@@ -6,7 +6,7 @@ Package translations from the web editor with menus, images and fonts in an `.ew
 
 ## Translation editor
 
-Select the target language in the [translation editor](https://github.com/VriskaSerket51/eastward-kr/blob/master/README.md), save your translations and press `Export JSON`.
+Select the target language in the [translation editor](https://github.com/VriskaSerket51/eastward-translate/blob/master/README.md), save your translations and press `Export JSON`.
 
 ```json
 {"language":"ko","translations":[{"path":"config/strings/UIString.xls/menu","key":"exit","value":"나가기"}]}

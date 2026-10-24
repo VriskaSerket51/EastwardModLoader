@@ -6,7 +6,7 @@
 
 ## 번역 웹
 
-[번역 웹](https://github.com/VriskaSerket51/eastward-kr/blob/master/README.ko.md)에서 대상 언어를 선택하고 번역을 저장한 뒤 `Export JSON`으로 내보냅니다.
+[번역 웹](https://github.com/VriskaSerket51/eastward-translate/blob/master/README.ko.md)에서 대상 언어를 선택하고 번역을 저장한 뒤 `Export JSON`으로 내보냅니다.
 
 ```json
 {"language":"ko","translations":[{"path":"config/strings/UIString.xls/menu","key":"exit","value":"나가기"}]}
