@@ -2,21 +2,20 @@
 
 English | [한국어](README.ko.md)
 
-An unofficial Eastward mod loader for Lua scripts and resource replacement packages.
+Unofficial mod loader for loading user-created Lua scripts and custom resources into Eastward.
 
 ## How to use
 
-Open the game directory in EastwardModTool and select **Mod > Manage mods...**.
+1. Open the game folder in [EastwardModTool](https://github.com/VriskaSerket51/EastwardModTool).
+2. Open `Mod > Manage mods...` and select `Install / update loader`.
+3. Add an `.ewmod`, Lua file or folder containing `main.lua`.
+4. Enable the mods and select `Apply enabled mods`.
 
-Use **Install / update loader**, then add an `.ewmod`, a Lua file or a directory containing `main.lua`. Select the mods to use and press **Apply enabled mods**.
+Installation updates the startup script in `_system.g` and backs up the archive. `Uninstall loader` restores that backup.
 
-The loader adds a call before the existing `mock.init` call in the startup Lua code inside `_system.g`. The archive is backed up before installation. **Uninstall loader** restores the backup.
+## Mod creation
 
-The loader mounts `.ewmod` packages as ZIPs and reads their resources directly. Activating mods does not rebuild resource `.g` archives. See the [engine notes](docs/engine.md) for details.
-
-## Creating mods
-
-Start with `template.lua`. Connect to game signals in `initMod(mod)`:
+Start with `template.lua`:
 
 ```lua
 function initMod(mod)
@@ -26,26 +25,24 @@ function initMod(mod)
 end
 ```
 
-To replace a Lua module, put `Common.lua` in the mod directory:
+To replace a Lua module, put `Common.lua` in the mod folder and call:
 
 ```lua
-function initMod(mod)
-    mod.patchScript('script.Common', 'Common.lua')
-end
+mod.patchScript('script.Common', 'Common.lua')
 ```
 
-Replacements are applied before game startup. Lua mods replacing the same module cannot be enabled together.
+Call it inside `initMod`, before game startup. Mods replacing the same Lua module cannot be enabled together.
 
-See the [language patch guide](docs/language-patches.md) to change translations, menus, images and fonts together.
+## Documentation
+
+See the [language patch guide](docs/language-patches.md) for creating language mods.
 
 ## How to build
 
-Requires .NET 10.
+.NET 10 required.
 
 ```sh
 git clone --recurse-submodules https://github.com/VriskaSerket51/EastwardModLoader.git
 cd EastwardModLoader
 dotnet build EastwardModLoader.sln -c Release
 ```
-
-Installation and mod management code is in `EastwardModLoader.Core`. Other applications can use `LoaderModManager`.

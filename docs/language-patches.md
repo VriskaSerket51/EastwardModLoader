@@ -6,7 +6,7 @@ Package translations from the web editor with menus, images and fonts in an `.ew
 
 ## Translation editor
 
-Select the target language in the [translation editor](https://github.com/VriskaSerket51/eastward-kr/blob/master/README.md), save your translations and press **Export JSON**.
+Select the target language in the [translation editor](https://github.com/VriskaSerket51/eastward-kr/blob/master/README.md), save your translations and press `Export JSON`.
 
 ```json
 {"language":"ko","translations":[{"path":"config/strings/UIString.xls/menu","key":"exit","value":"나가기"}]}
@@ -14,18 +14,20 @@ Select the target language in the [translation editor](https://github.com/Vriska
 
 When editing JSON directly, keep `path` and `key` unchanged and edit only `value`. Preserve format arguments, markup and line breaks.
 
-## Creating a mod
+## Mod creation
 
 1. Open the game directory in EastwardModTool.
-2. Select **Mod > Create language patch...**.
-3. Enter the language ID, display name and base language. For example: `ko`, `한국어`, `en`.
+2. Select `Mod > Create language patch...`.
+3. Enter the language ID, display name and base language.
 4. Select the exported `translations.json` as the translation JSON file.
 5. Choose any images and fonts you need.
-6. Press **Create editing drafts**.
-7. Check the sources and previews, then save an `.ewmod` with **Export mod...**.
-8. In **Manage mods...**, install or update the loader, add the package and enable it.
+6. Press `Create editing drafts`.
+7. Check the sources and previews, then save an `.ewmod` with `Export mod...`.
+8. In `Manage mods...`, install or update the loader, add the package and enable it.
 
-Use the same language ID in the web editor and the mod tool. Default text for a new language comes from the selected base language. The patch includes the settings menu and language registration scripts. Use **Include the initial language selection menu** to include the first-run language selection screen.
+Use the same language ID in the web editor and the mod tool. For Korean, use `ko` as the language ID, `한국어` as the display name and a base language such as `en`.
+
+Default text for a new language comes from the selected base language. The patch includes the settings menu and language registration scripts. Use `Include the initial language selection menu` to include the first-run language selection screen.
 
 ## Images
 
@@ -47,6 +49,6 @@ Edit bitmap font sources and glyph pages together. Existing font sources can be 
 
 Text cannot appear without the required glyphs. Languages such as Arabic also need in-game checks for text shaping and direction.
 
-## Files included in a patch
+## Distribution
 
 The tool code license does not grant rights to use or redistribute game resources or fonts. Before distributing a patch, check the permissions and distribution terms for the images, fonts, scripts and translations it includes.

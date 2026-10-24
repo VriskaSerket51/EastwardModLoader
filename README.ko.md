@@ -2,21 +2,21 @@
 
 [English](README.md) | 한국어
 
-Eastward에서 Lua 모드와 리소스 교체 패키지를 불러오는 비공식 모드 로더입니다.
+사용자가 만든 Lua 스크립트와 커스텀 리소스를 Eastward에 불러오는 비공식 모드 로더입니다.
 
 ## 사용 방법
 
-EastwardModTool에서 게임 폴더를 열고 **Mod > Manage mods...** 메뉴를 선택합니다.
+1. [EastwardModTool](https://github.com/VriskaSerket51/EastwardModTool)에서 게임 폴더를 열기
+2. `Mod > Manage mods...`에서 `Install / update loader`를 선택하기
+3. `.ewmod`, Lua 파일 또는 `main.lua`가 있는 폴더를 추가하기
+4. 사용할 모드를 체크한 뒤 `Apply enabled mods`를 선택하기
 
-**Install / update loader**로 설치한 뒤 `.ewmod`, Lua 파일 또는 `main.lua`가 있는 폴더를 추가하세요. 사용할 모드를 선택하고 **Apply enabled mods**를 누르면 됩니다.
+> 설치 시 `_system.g`의 시작 스크립트를 수정하고 원본 아카이브를 백업합니다.
+> `Uninstall loader`로 백업을 복원할 수 있습니다.
 
-로더는 `_system.g` 안의 시작 Lua 코드에서 기존 `mock.init` 호출 앞에 로더 실행 코드를 추가합니다. 설치 전 아카이브는 백업하며, **Uninstall loader**로 제거하면 백업을 복원합니다.
+## 모드 생성
 
-`.ewmod`는 ZIP으로 마운트해 안의 리소스를 바로 읽습니다. 모드 활성화 때 리소스 `.g`를 다시 만들지 않습니다. 자세한 구조는 [여기](docs/engine.ko.md)에 있습니다.
-
-## 모드 만들기
-
-`template.lua`를 수정해 사용할 수 있습니다. `initMod(mod)`에서 게임 시그널에 연결합니다.
+`template.lua`를 복사해서 수정합니다.
 
 ```lua
 function initMod(mod)
@@ -26,17 +26,17 @@ function initMod(mod)
 end
 ```
 
-Lua 모듈을 교체하는 예제입니다. 모드 폴더에 `Common.lua`를 넣습니다.
+Lua 모듈을 교체하려면 모드 폴더에 `Common.lua`를 넣고 `initMod` 안에서 아래 함수를 호출합니다.
 
 ```lua
-function initMod(mod)
-    mod.patchScript('script.Common', 'Common.lua')
-end
+mod.patchScript('script.Common', 'Common.lua')
 ```
 
-교체는 게임 시작 전에 적용됩니다. 같은 모듈을 바꾸는 Lua 모드는 함께 사용할 수 없습니다.
+> 교체는 게임 시작 전에 적용됩니다. 같은 Lua 모듈을 바꾸는 모드는 함께 사용할 수 없습니다.
 
-번역과 메뉴, 이미지, 폰트를 함께 바꾸려면 [언어 패치 가이드](docs/language-patches.ko.md)를 참고하세요.
+## 관련 문서
+
+언어 패치 제작 방법은 [언어 패치 가이드](docs/language-patches.ko.md)를 참고하면 됩니다.
 
 ## 빌드 방법
 
@@ -47,5 +47,3 @@ git clone --recurse-submodules https://github.com/VriskaSerket51/EastwardModLoad
 cd EastwardModLoader
 dotnet build EastwardModLoader.sln -c Release
 ```
-
-설치와 모드 관리 코드는 `EastwardModLoader.Core`에 있습니다. 다른 앱에서는 `LoaderModManager`를 사용하면 됩니다.
